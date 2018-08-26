@@ -32,6 +32,10 @@ Notes:
 - returning current cell value as exit code is not implemented
 
 """
+Usage="""
+Usage: python2 snusp.py <mode> <sourcefile> [-i <inputfile>]
+where <mode> == -c or -m or -b (core/modular/bloated)
+"""
 
 import sys
 import random
@@ -73,7 +77,7 @@ def gotonext():
     currx, curry = findnext(dire, currx, curry)
 
 if len(sys.argv) < 3:
-    print "Usage: snusp.py <mode> <sourcefile> [-i <inputfile>]\nwhere <mode> == -c (core) or -m (modular) or -b (bloated)"
+    print Usage
     exit(1)
 
 mode = sys.argv[1]
