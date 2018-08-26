@@ -16,11 +16,23 @@ You should have received a copy of the GNU General Public License
 along with this program; if not, write to the Free Software
 Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 """
+"""
+Changes:
 
-import fileinput
+IMPORTANT: This version does not implement input.
+
+- added `and version >= 2` for currchar == ";" and ":" because these instructions are supported only in Bloated SNUSP
+- swapped code for ";" and ":", see comment there
+- added check for `currlevel < 0` and `currindex < 0`
+- renamed stack to mem because it is not a stack
+- commented out implementation of ',' (input) because it depends on msvcrt (available only on windows)
+- added ability to choose SNUSP version from command line
+- fixed % (rand)
+
+"""
+
 import sys
 import random
-import msvcrt
 
 try:
     import psyco #greatly speeds it up
@@ -58,10 +70,22 @@ def gotonext():
     global currx, curry, dire
     currx, curry = findnext(dire, currx, curry)
 
+if len(sys.argv) < 3:
+    print "Usage: snusp.py <mode> <filename>\nwhere <mode> == core or c or modular or m or bloated or b"
+    exit(1)
+
+mode = sys.argv[1]
+if mode == "core" or mode == "c": version = 0
+elif mode == "modular" or mode == "m": version = 1
+elif mode == "bloated" or mode == "b": version = 2
+else:
+    print "Invalid mode:", mode
+    exit(1)
+
 program = []
 currx = curry = 0
 maxlen = 0
-for line in fileinput.input():
+for line in open(sys.argv[2]):
     n = [c for c in line]
     if currx == 0 and curry == 0 and line.find("$") >= 0:
         currx = line.index("$")
@@ -74,7 +98,7 @@ for line in range(len(program)): #pad the lines out
     program[line] += " " * (maxlen - len(program[line]))
 
 dire = 0
-stack = [[0]]
+mem = [[0]]
 currindex = 0
 currlevel = 0
 callstack = []
@@ -119,22 +143,25 @@ while threads:
         
         
     currchar = program[curry][currx]
-    #print currx, curry, stack[currindex]
+    #print currx, curry, mem[currindex]
     
     blocked = 0
     if currchar == ">":
         currindex += 1
-        if len(stack[currlevel]) <= currindex: #lengthen the stack if it's not long enough
-            stack[currlevel].append(0)
+        if len(mem[currlevel]) <= currindex: #lengthen the memory if it's not long enough
+            mem[currlevel].append(0)
             
     elif currchar == "<":
         currindex -= 1
+        if currindex < 0: # it is easier to check it here instead of all places where it is used, see also ":" instruction
+            print "Error: memory x coord < 0"
+            exit(1)
         
     elif currchar == "+":
-        stack[currlevel][currindex] += 1
+        mem[currlevel][currindex] += 1
         
     elif currchar == "-":
-        stack[currlevel][currindex] -= 1
+        mem[currlevel][currindex] -= 1
         
     elif currchar == "/":
         dire = 3 - dire #rotate
@@ -146,17 +173,23 @@ while threads:
         gotonext()
         
     elif currchar == "?": #skip a space if the current space has a zero
-        if not stack[currlevel][currindex]:
+        if not mem[currlevel][currindex]:
             gotonext()
             
-    elif currchar == ",": #read input 
-        if msvcrt.kbhit():
-            stack[currlevel][currindex] = ord(msvcrt.getche())
-        else:
-            blocked = 1
+    #elif currchar == ",": #read input 
+    #    if msvcrt.kbhit():
+    #        mem[currlevel][currindex] = ord(msvcrt.getche())
+    #    else:
+    #        blocked = 1
+    elif currchar == ",":
+        print "Error: input not implemented"
+        exit(1)
         
     elif currchar == ".": #write output
-        sys.stdout.write(chr(stack[currlevel][currindex]))
+        #print currindex
+        #print mem[currlevel]
+        #print mem[currlevel][currindex]
+        sys.stdout.write(chr(mem[currlevel][currindex]))
         
     elif currchar == "@" and version >= 1: #append the current location
         callstack.append((dire, currx, curry))
@@ -173,20 +206,29 @@ while threads:
         threads.append(Thread((currx, curry), dire, currindex, currlevel, []))
     
     elif currchar == "%" and version >= 2: #get a random number
-        stack[currlevel][currindex] = random.randrange(stack[currlevel][currindex])
+        val = mem[currlevel][currindex]
+        if val >= 0: r = range(0, val+1)  # +1 because range does not include stop value
+        else: r = range(val, 1)
+        mem[currlevel][currindex] = random.choice(r)
+
+## According to spec, "The number of moves upwards must not exceed the number of moves downwards."
+## This means that memory grows downwards, so ';' must increase `currlevel`, not decrease it.
     
-    elif currchar == ":": #move up a memory level
+    elif currchar == ";" and version >= 2: #move down memory, increase memory level (y)
         currlevel += 1
-        if len(stack) <= currlevel:
-            stack.append([0] * (currindex + 1))
+        if len(mem) <= currlevel:
+            mem.append([0] * (currindex + 1))
             
-        if len(stack[currlevel]) <= currindex:
-            stack[currlevel].extend([0] * (currindex + 1 - len(stack[currlevel])))
+        if len(mem[currlevel]) <= currindex:
+            mem[currlevel].extend([0] * (currindex + 1 - len(mem[currlevel])))
     
-    elif currchar == ";": #move down a memory level
+    elif currchar == ":" and version >= 2: #move up memory, decrease memory level (y)
         currlevel -= 1
-        if len(stack[currlevel]) <= currindex:
-            stack[currlevel].extend([0] * (currindex + 1 - len(stack[currlevel])))           
+        if currlevel < 0:
+            print "Error: memory y coord < 0"
+            exit(1)
+        if len(mem[currlevel]) <= currindex:
+            mem[currlevel].extend([0] * (currindex + 1 - len(mem[currlevel])))           
     
       
     if not blocked:
