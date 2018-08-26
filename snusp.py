@@ -21,11 +21,15 @@ Changes:
 
 - added `and version >= 2` for currchar == ";" and ":" because these instructions are supported only in Bloated SNUSP
 - swapped code for ";" and ":", see comment there
-- added check for `currlevel < 0` and `currindex < 0`
+- added check for `currindex < 0` and `currlevel < 0`
 - renamed stack to mem because it is not a stack
 - added ability to choose SNUSP version from command line
 - fixed % (rand)
-- input only from file
+- removed input from stdin (Windows specific implementation), input only from file (-i option)
+
+Notes:
+
+- returning current cell value as exit code is not implemented
 
 """
 
@@ -183,7 +187,8 @@ while threads:
             mem[currlevel][currindex] = ord(input[0])
             input = input[1:]
         else:
-            blocked = 1
+            #blocked = 1  # there is no sense in blocking - there is not going to be any additional input
+            mem[currlevel][currindex] = -1  # just input a EOF value
     elif currchar == ",":
         print "Error: input not implemented"
         exit(1)
