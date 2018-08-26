@@ -69,13 +69,13 @@ def gotonext():
     currx, curry = findnext(dire, currx, curry)
 
 if len(sys.argv) < 3:
-    print "Usage: snusp.py <mode> <sourcefile> [-i <inputfile>]\nwhere <mode> == core or c or modular or m or bloated or b"
+    print "Usage: snusp.py <mode> <sourcefile> [-i <inputfile>]\nwhere <mode> == -c (core) or -m (modular) or -b (bloated)"
     exit(1)
 
 mode = sys.argv[1]
-if mode == "core" or mode == "c": version = 0
-elif mode == "modular" or mode == "m": version = 1
-elif mode == "bloated" or mode == "b": version = 2
+if   mode == "-c": version = 0  # core
+elif mode == "-m": version = 1  # modular
+elif mode == "-b": version = 2  # bloated
 else:
     print "Invalid mode:", mode
     exit(1)
