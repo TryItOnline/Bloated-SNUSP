@@ -19,15 +19,13 @@ Foundation, Inc., 59 Temple Place - Suite 330, Boston, MA  02111-1307, USA.
 """
 Changes:
 
-IMPORTANT: This version does not implement input.
-
 - added `and version >= 2` for currchar == ";" and ":" because these instructions are supported only in Bloated SNUSP
 - swapped code for ";" and ":", see comment there
 - added check for `currlevel < 0` and `currindex < 0`
 - renamed stack to mem because it is not a stack
-- commented out implementation of ',' (input) because it depends on msvcrt (available only on windows)
 - added ability to choose SNUSP version from command line
 - fixed % (rand)
+- input only from file
 
 """
 
@@ -71,7 +69,7 @@ def gotonext():
     currx, curry = findnext(dire, currx, curry)
 
 if len(sys.argv) < 3:
-    print "Usage: snusp.py <mode> <filename>\nwhere <mode> == core or c or modular or m or bloated or b"
+    print "Usage: snusp.py <mode> <sourcefile> [-i <inputfile>]\nwhere <mode> == core or c or modular or m or bloated or b"
     exit(1)
 
 mode = sys.argv[1]
@@ -81,6 +79,10 @@ elif mode == "bloated" or mode == "b": version = 2
 else:
     print "Invalid mode:", mode
     exit(1)
+
+input = ""
+if len(sys.argv) == 5 and sys.argv[3] == "-i":
+    input = open(sys.argv[4]).read()
 
 program = []
 currx = curry = 0
@@ -176,11 +178,12 @@ while threads:
         if not mem[currlevel][currindex]:
             gotonext()
             
-    #elif currchar == ",": #read input 
-    #    if msvcrt.kbhit():
-    #        mem[currlevel][currindex] = ord(msvcrt.getche())
-    #    else:
-    #        blocked = 1
+    elif currchar == ",": #read input 
+        if input != "":
+            mem[currlevel][currindex] = ord(input[0])
+            input = input[1:]
+        else:
+            blocked = 1
     elif currchar == ",":
         print "Error: input not implemented"
         exit(1)
