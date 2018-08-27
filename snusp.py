@@ -191,8 +191,7 @@ while threads:
             mem[currlevel][currindex] = ord(input[0])
             input = input[1:]
         else:
-            #blocked = 1  # there is no sense in blocking - there is not going to be any additional input
-            mem[currlevel][currindex] = -1  # just input a EOF value
+            blocked = 1
     elif currchar == ",":
         print "Error: input not implemented"
         exit(1)
